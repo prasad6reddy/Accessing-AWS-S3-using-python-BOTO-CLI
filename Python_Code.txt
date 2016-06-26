@@ -1,0 +1,66 @@
+#!/usr/bin/python
+#this is the code to connect s3 and create a folder.
+import boto
+from boto.s3.lifecycle import Lifecycle, Transition, Rule
+
+s3 = boto.connect_s3()
+bucket = s3.create_bucket('prasad')  # bucket names must be unique
+key = bucket.new_key('mypython.py')
+key.set_contents_from_filename('/home/ec2-user/mypython.py')
+key.set_acl('public-read')
+
+#listing buckets of currently created buckets
+for key in bucket.list():
+        print "{name}\t{size}\t{modified}".format(
+                name = key.name,
+                size = key.size,
+                modified = key.last_modified,
+                )
+#bucketname = input('Enter the BUCKET name to list the contents')
+#print(bucketname)
+#Listing files of a specific folder
+mybucket = s3.get_bucket('mywebsite57')
+#print(mybucket)
+for key in mybucket.list():
+        print "{name}\t{size}\t{modified}".format(
+                name = key.name,
+                size = key.size,
+                modified = key.last_modified,
+                )
+
+#listing of all  buckets 
+for bucket in s3.get_all_buckets():
+        print "{name}\t{created}".format(
+                name = bucket.name,
+                created = bucket.creation_date,
+        )
+
+#creating an object in bucket
+mybucket = s3.get_bucket('prasad')
+key = mybucket.new_key('hello.txt')
+key.set_contents_from_string('Hello World!')
+
+#this is the way we do the file as public read.
+hello_key = mybucket.get_key('hello.txt')
+hello_key.set_canned_acl('public-read')
+
+#This deletes the object hello.txt
+mybucket.delete_key('hello.txt')
+
+# this the way we download a file from bucket
+key = mybucket.get_key('examples/xyz.csv')
+key.get_contents_to_filename('/home/ec2-user/document/xyz.csv')
+
+#this the way we move the contents from bucket to glacier
+
+to_glacier = Transition(days=1, storage_class='GLACIER')
+rule = Rule('ruleid', 'logs/', 'Enabled', transition=to_glacier)
+lifecycle = Lifecycle()
+lifecycle.append(rule)
+#We can now configure the bucket with this lifecycle policy
+mybucket.configure_lifecycle(lifecycle)
+
+#You can also retrieve the current lifecycle policy for the bucket:
+current = mybucket.get_lifecycle_config()
+print current[0].transition
+
